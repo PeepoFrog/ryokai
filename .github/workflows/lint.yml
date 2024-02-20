@@ -1,0 +1,29 @@
+name: Linter Check
+
+on:
+  pull_request:
+    branches:
+      - feature/**
+      - bugfix/**
+      - hotfix/**
+
+permissions:
+  contents: read
+
+jobs:
+  golangci:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # checkout v4.1.1
+      - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # setup-go v5.0.0
+        with:
+          go-version: '^1.22'
+          cache: false # required by golangci v4.0.0 https://github.com/golangci/golangci-lint-action?tab=readme-ov-file#how-to-use
+      - run: go version # Confirm the installed version
+
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@3cfe3a4abbb849e10058ce4af15d205b6da42804 # golangci-lint-action v4.0.0
+        with:
+          version: latest
+          config: .golangci.yml
