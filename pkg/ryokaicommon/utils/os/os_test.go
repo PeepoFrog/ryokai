@@ -152,7 +152,7 @@ func TestCreateFileWithData(t *testing.T) {
 	}
 }
 
-func TestCheckIfPortIsValid(t *testing.T) {
+func TestValidatePort(t *testing.T) {
 	const portValidRange = 65535
 	validPorts := []string{"0", "3", "55", "22222", strconv.Itoa(portValidRange)}
 	// checking valid port range
@@ -163,7 +163,7 @@ func TestCheckIfPortIsValid(t *testing.T) {
 		}
 	}
 
-	// checking non valod port range
+	// checking non valid port range
 	invalidPorts := []string{"-1", "-5", "-2000", "-50434", "-portValidRange", "number", "334combined"}
 	for _, num := range invalidPorts {
 		ok := ValidatePort(num)
@@ -212,5 +212,38 @@ func TestRunCommand(t *testing.T) {
 	err = os.RemoveAll(tempDir)
 	if err != nil {
 		t.Error("Unable to delete directory in temporary folder")
+	}
+}
+
+func TestValidateIP(t *testing.T) {
+	// Array with 5 valid IP addresses (mix of IPv4 and IPv6)
+	validIPs := []string{
+		"192.168.1.1",  // Valid IPv4
+		"10.0.0.1",     // Valid IPv4
+		"172.16.254.1", // Valid IPv4
+		"2001:0db8:85a3:0000:0000:8a2e:0370:7334", // Valid IPv6
+		"fe80::1ff:fe23:4567:890a",                // Valid IPv6
+	}
+	for _, ip := range validIPs {
+		ok := ValidateIP(ip)
+		if !ok {
+			t.Errorf("Error checking <%s> ip is valid", ip)
+		}
+	}
+
+	// Array with 5 invalid IP addresses
+	invalidIPs := [5]string{
+		"192.168.1",      // Invalid (too short for IPv4)
+		"10.0.0.256",     // Invalid (256 is out of the IPv4 range)
+		"172.16.254.1.1", // Invalid (too long for IPv4)
+		"2001:0db8:85a3:0000:0000:8g2e:0370:7334", // Invalid (contains 'g' in IPv6)
+		"fe80::1ff:fe23:4567:890g",                // Invalid (contains 'g' in IPv6)
+	}
+
+	for _, ip := range invalidIPs {
+		ok := ValidateIP(ip)
+		if ok {
+			t.Errorf("Error checking <%s> ip is invalid", ip)
+		}
 	}
 }
