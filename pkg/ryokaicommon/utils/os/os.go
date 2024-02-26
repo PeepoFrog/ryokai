@@ -94,7 +94,7 @@ func IsDir(path string) bool {
 // If os.Stat returns nil error, the file exists, and the function returns true.
 // If the error is of type os.IsNotExist, indicating the file does not exist, it returns false.
 // For any other type of error, it also returns false, treating inaccessible files as non-existent.
-func FileExist(path string) bool {
+func PathExists(path string) bool {
 	_, err := os.Stat(path)
 
 	switch {
@@ -134,7 +134,7 @@ func ValidatePort(input string) bool {
 		return false
 	}
 
-	return !(port < 0 || port > 65535)
+	return port >= 0 && port <= 65535
 }
 
 // RunCommand executes the given command string in the system's shell
@@ -148,7 +148,7 @@ func ValidatePort(input string) bool {
 func RunCommand(command string) ([]byte, error) {
 	args, err := shlex.Split(command)
 	if err != nil {
-		return []byte{}, fmt.Errorf("error when spiting cmd to array of args, err: %w", err)
+		return nil, fmt.Errorf("error when spiting cmd to array of args, err: %w", err)
 	}
 
 	logrus.Printf("Running: <%s>", command)
@@ -160,7 +160,7 @@ func RunCommand(command string) ([]byte, error) {
 		return out, fmt.Errorf("error when executing <%s>, err: %w", command, err)
 	}
 
-	return (out), nil
+	return out, nil
 }
 
 // CreateFileWithData creates a new file at the specified filePath and writes the given data to it.
