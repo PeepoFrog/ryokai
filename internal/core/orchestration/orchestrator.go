@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 
+	"github.com/KiraCore/ryokai/internal/core/orchestration/docker"
 	"github.com/KiraCore/ryokai/pkg/ryokaicommon/types"
 )
 
@@ -37,7 +38,20 @@ type AppDestroy struct {
 }
 
 func (app *AppManager) DeployApplication(ctx context.Context, deployment *AppDeployment) error {
-	err := app.orchestrator.PullImage(ctx, deployment.Spec.Image)
+	var err error
+	switch deployment.Spec.ContainerType {
+	case "lxc":
+	//...
+	case "docker":
+		app.orchestrator, err = docker.NewDockerOrchestrator()
+		if err != nil {
+			return err
+		}
+		// /...
+	case "podman":
+	}
+
+	err = app.orchestrator.PullImage(ctx, deployment.Spec.Image)
 	if err != nil {
 		return err
 	}
