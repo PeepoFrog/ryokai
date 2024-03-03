@@ -14,7 +14,6 @@ type Orchestrator interface {
 	StartContainer(ctx context.Context, containerID string) error
 	StopContainer(ctx context.Context, containerID string) error
 	RemoveContainer(ctx context.Context, containerID string) error
-	ExecCommandInContainer(ctx context.Context, containerID, command string) ([]byte, error)
 }
 
 type AppManager struct {
@@ -39,9 +38,10 @@ type AppDestroy struct {
 
 func (app *AppManager) DeployApplication(ctx context.Context, deployment *AppDeployment) error {
 	var err error
+
 	switch deployment.Spec.ContainerType {
 	case "lxc":
-	//...
+	// ...
 	case "docker":
 		app.orchestrator, err = docker.NewDockerOrchestrator()
 		if err != nil {
@@ -51,22 +51,23 @@ func (app *AppManager) DeployApplication(ctx context.Context, deployment *AppDep
 	case "podman":
 	}
 
-	err = app.orchestrator.PullImage(ctx, deployment.Spec.Image)
-	if err != nil {
-		return err
-	}
-	containerID, err := app.orchestrator.CreateContainer(ctx, deployment.Spec)
+	// err = app.orchestrator.PullImage(ctx, deployment.Spec.Image)
+	// if err != nil {
+	// 	return err
+	// }
 	slog.Info("Deploying")
+
+	containerID, err := app.orchestrator.CreateContainer(ctx, deployment.Spec)
 	if err != nil {
 		return err
 	}
 
 	// PreRunSteps can be `app.orchestrator.StartContainer' with specific arg`
-	for _, step := range deployment.PreRunSteps {
-		if _, err := app.orchestrator.ExecCommandInContainer(ctx, containerID, step.(string)); err != nil {
-			return err
-		}
-	}
+	// for _, step := range deployment.PreRunSteps {
+	// 	if _, err := app.orchestrator.ExecCommandInContainer(ctx, containerID, step.(string)); err != nil {
+	// 		return err
+	// 	}
+	// }
 
 	err = app.orchestrator.StartContainer(ctx, containerID)
 	if err != nil {

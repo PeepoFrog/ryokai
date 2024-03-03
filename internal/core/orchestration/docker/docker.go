@@ -1,11 +1,14 @@
 package docker
 
 import (
+	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
 )
 
 type DockerOrchestrator struct {
-	cli *client.Client
+	containerConfig container.Config
+	hostConfigg     container.HostConfig
+	cli             *client.Client
 }
 
 func NewDockerOrchestrator() (*DockerOrchestrator, error) {
