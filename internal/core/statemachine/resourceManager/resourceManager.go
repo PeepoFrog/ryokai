@@ -6,11 +6,15 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/BurntSushi/toml"
 	"github.com/KiraCore/ryokai/pkg/ryokaicommon/types"
+	osutils "github.com/KiraCore/ryokai/pkg/ryokaicommon/utils/os"
 	"github.com/shirou/gopsutil/cpu"
 	"github.com/shirou/gopsutil/disk"
 	"github.com/shirou/gopsutil/mem"
 )
+
+const SysRes string = "/tmp/testConfig.toml"
 
 func GetTotalSystemResources() (*types.SystemResources, error) {
 	// Get virtual memory stats
@@ -57,4 +61,53 @@ func GetTotalSystemResources() (*types.SystemResources, error) {
 	}
 
 	return systemResources, nil
+}
+
+func WriteSystemRecourses(systemResourcesToWrite *types.SystemResources, configFilePath string) error {
+	isDir := osutils.IsDir(SysRes)
+	if isDir {
+		return fmt.Errorf("error while writing %v file, file is a dir", SysRes)
+	}
+
+	cfgDir := filepath.Dir(configFilePath)
+	exist := osutils.PathExists(cfgDir)
+	if !exist {
+		err := os.MkdirAll(cfgDir, 0o755)
+		if err != nil {
+			return err
+		}
+	}
+
+	f, err := os.Create(configFilePath)
+	if err != nil {
+		return err
+	}
+
+	encoder := toml.NewEncoder(f)
+	err = encoder.Encode(systemResourcesToWrite)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func ReadSystemRecourses(configFilePath string) (*types.SystemResources, error) {
+	exist := osutils.PathExists(configFilePath)
+	isDir := osutils.IsDir(configFilePath)
+	if !exist && isDir {
+		return nil, fmt.Errorf("unable to read system resources state file, exist=%v, isDir=%v", exist, isDir)
+	}
+
+	data, err := os.ReadFile(configFilePath)
+	if err != nil {
+		return nil, err
+	}
+
+	sysRes := &types.SystemResources{}
+	err = toml.Unmarshal(data, sysRes)
+	if err != nil {
+		return nil, err
+	}
+	return sysRes, nil
 }
