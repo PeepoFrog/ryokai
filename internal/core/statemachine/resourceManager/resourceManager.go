@@ -2,7 +2,6 @@ package resourcemanager
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 
@@ -17,48 +16,49 @@ import (
 const SysRes string = "/tmp/testConfig.toml"
 
 func GetTotalSystemResources() (*types.SystemResources, error) {
-	// Get virtual memory stats
 	systemResources := &types.SystemResources{}
 
 	vMemStat, err := mem.VirtualMemory()
 	if err != nil {
 		return nil, err
 	}
-	systemResources.RAM = vMemStat.VMallocTotal
+	systemResources.RAM.Set(vMemStat.Total)
+
 	logicCpuCores, err := cpu.Counts(true)
 	if err != nil {
 		return nil, err
 	}
-	systemResources.Cpu = uint16(logicCpuCores)
+	systemResources.Cpu.Set(uint(logicCpuCores))
 
-	cwd, err := os.Getwd()
+	disk, err := getCurrentDisk()
 	if err != nil {
 		return nil, err
 	}
+	systemResources.Disk.Set(disk.Total)
 
-	cwd, err = filepath.Abs(cwd)
+	return systemResources, nil
+}
+
+func GetAvailableResources() (*types.SystemResources, error) {
+	systemResources := &types.SystemResources{}
+
+	vMemStat, err := mem.VirtualMemory()
 	if err != nil {
 		return nil, err
 	}
+	systemResources.RAM.Set(vMemStat.Available)
 
-	partitions, err := disk.Partitions(true)
+	logicCpuCores, err := cpu.Counts(true)
 	if err != nil {
 		return nil, err
 	}
+	systemResources.Cpu.Set(uint(logicCpuCores))
 
-	for _, p := range partitions {
-		if len(cwd) >= len(p.Mountpoint) && cwd[:len(p.Mountpoint)] == p.Mountpoint {
-			log.Printf("Current directory %s is on partition %s mounted at %s\n", cwd, p.Device, p.Mountpoint)
-			usage, err := disk.Usage(p.Mountpoint)
-			if err != nil {
-				fmt.Println("Error getting partition usage:", err)
-				return nil, err
-			}
-			systemResources.Disk = uint(usage.Free)
-			log.Printf("Disk Usage of Partition %s: Total: %d, Free: %d, Used: %d\n", p.Device, usage.Total, usage.Free, usage.Used)
-			break
-		}
+	disk, err := getCurrentDisk()
+	if err != nil {
+		return nil, err
 	}
+	systemResources.Disk.Set(disk.Free)
 
 	return systemResources, nil
 }
@@ -110,4 +110,36 @@ func ReadSystemRecourses(configFilePath string) (*types.SystemResources, error) 
 		return nil, err
 	}
 	return sysRes, nil
+}
+
+func getCurrentDisk() (*disk.UsageStat, error) {
+	cwd, err := os.Getwd()
+	if err != nil {
+		return nil, err
+	}
+
+	cwd, err = filepath.Abs(cwd)
+	if err != nil {
+		return nil, err
+	}
+
+	partitions, err := disk.Partitions(true)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, p := range partitions {
+		if len(cwd) >= len(p.Mountpoint) && cwd[:len(p.Mountpoint)] == p.Mountpoint {
+			// log.Printf("Current directory %s is on partition %s mounted at %s\n", cwd, p.Device, p.Mountpoint)
+			usage, err := disk.Usage(p.Mountpoint)
+			if err != nil {
+				fmt.Println("Error getting partition usage:", err)
+				return nil, err
+			}
+
+			// log.Printf("Disk Usage of Partition %s: Total: %d, Free: %d, Used: %d\n", p.Device, usage.Total, usage.Free, usage.Used)
+			return usage, nil
+		}
+	}
+	return nil, fmt.Errorf("unable to get current disk, disk not found")
 }

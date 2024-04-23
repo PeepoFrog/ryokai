@@ -5,5 +5,6 @@ type DApp struct {
 	Name             string
 	RepositoryUrl    string
 	DockerComposeURL string
+	Running          bool
 	Resources        SystemResources
 }
