@@ -18,17 +18,19 @@ import (
 type DockerComposeOrchestrator struct {
 	*DockerComposeProjectManager
 	ComposeFileName string
-	*types.DApp
+	Dapp            *types.DApp
+	// *types.DApp
 }
 
 func NewDockerComposeOrchestrator(dapp *types.DApp) *DockerComposeOrchestrator {
 	defaultComposeFilePath := "compose.yml"
 	dcm := NewDockerComposeManager()
-	return &DockerComposeOrchestrator{DApp: dapp, ComposeFileName: defaultComposeFilePath, DockerComposeProjectManager: dcm}
+	return &DockerComposeOrchestrator{ComposeFileName: defaultComposeFilePath, DockerComposeProjectManager: dcm}
+	// return &DockerComposeOrchestrator{DApp: dapp, ComposeFileName: defaultComposeFilePath, DockerComposeProjectManager: dcm}
 }
 
 func (o *DockerComposeOrchestrator) Run(ctx context.Context) error {
-	dappSrcFolder := getDAppSrcFolder(o.ID)
+	dappSrcFolder := getDAppSrcFolder(o.Dapp.ID)
 	cmd := exec.Command("docker-compose", "-f", filepath.Join(dappSrcFolder, o.ComposeFileName), "up", "-d")
 	log.Printf("Running: %v", cmd)
 	output, err := cmd.CombinedOutput()
@@ -40,7 +42,7 @@ func (o *DockerComposeOrchestrator) Run(ctx context.Context) error {
 }
 
 func (o *DockerComposeOrchestrator) Pull(ctx context.Context) error {
-	dappSrcFolder := getDAppSrcFolder(o.ID)
+	dappSrcFolder := getDAppSrcFolder(o.Dapp.ID)
 	check := osutils.PathExists(dappSrcFolder)
 	if check {
 		err := os.RemoveAll(dappSrcFolder)
@@ -52,7 +54,7 @@ func (o *DockerComposeOrchestrator) Pull(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	err = o.GetDockerComposeFile(o.URL, getDAppSrcFolder(o.ID), o.ComposeFileName)
+	err = o.GetDockerComposeFile(ctx, o.Dapp.URL, getDAppSrcFolder(o.Dapp.ID), o.ComposeFileName)
 	if err != nil {
 		return err
 	}
@@ -60,7 +62,7 @@ func (o *DockerComposeOrchestrator) Pull(ctx context.Context) error {
 }
 
 func (o *DockerComposeOrchestrator) Build(ctx context.Context) error {
-	dappSrcFolder := getDAppSrcFolder(o.ID)
+	dappSrcFolder := getDAppSrcFolder(o.Dapp.ID)
 	cmd := exec.Command("docker-compose", "-f", filepath.Join(dappSrcFolder, o.ComposeFileName), "build")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
@@ -71,7 +73,7 @@ func (o *DockerComposeOrchestrator) Build(ctx context.Context) error {
 }
 
 func (o *DockerComposeOrchestrator) Down(ctx context.Context) error {
-	dappSrcFolder := getDAppSrcFolder(o.ID)
+	dappSrcFolder := getDAppSrcFolder(o.Dapp.ID)
 	cmd := exec.Command("docker-compose", "-f", filepath.Join(dappSrcFolder, o.ComposeFileName), "down")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
