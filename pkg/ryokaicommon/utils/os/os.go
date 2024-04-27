@@ -188,12 +188,12 @@ func CreateFileWithData(filePath string, data []byte) error {
 	return nil
 }
 
-func DownloadFile(url, folder, filName string) error {
+func DownloadFile(url, folder, fileName string) error {
 	check := PathExists(filepath.Dir(folder))
 	if !check {
 		return fmt.Errorf("<%v> path is not exist", folder)
 	}
-	saveFilePath := filepath.Join(folder, filName)
+	saveFilePath := filepath.Join(folder, fileName)
 
 	check = IsDir(saveFilePath)
 	if check {
