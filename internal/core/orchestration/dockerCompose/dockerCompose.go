@@ -10,24 +10,26 @@ import (
 	"path/filepath"
 	"strconv"
 
-	"github.com/KiraCore/ryokai/pkg/ryokaicommon/types"
-	"github.com/KiraCore/ryokai/pkg/ryokaicommon/utils/git"
 	osutils "github.com/KiraCore/ryokai/pkg/ryokaicommon/utils/os"
+
+	"github.com/KiraCore/ryokai/pkg/ryokaicommon/types"
 )
 
 type DockerComposeOrchestrator struct {
-	ComposeFilePath string
+	*DockerComposeProjectManager
+	ComposeFileName string
 	*types.DApp
 }
 
 func NewDockerComposeOrchestrator(dapp *types.DApp) *DockerComposeOrchestrator {
-	defaultComposeFilePath := "sekin-compose.yml"
-	return &DockerComposeOrchestrator{DApp: dapp, ComposeFilePath: defaultComposeFilePath}
+	defaultComposeFilePath := "compose.yml"
+	dcm := NewDockerComposeManager()
+	return &DockerComposeOrchestrator{DApp: dapp, ComposeFileName: defaultComposeFilePath, DockerComposeProjectManager: dcm}
 }
 
 func (o *DockerComposeOrchestrator) Run(ctx context.Context) error {
 	dappSrcFolder := getDAppSrcFolder(o.ID)
-	cmd := exec.Command("docker-compose", "-f", filepath.Join(dappSrcFolder, o.ComposeFilePath), "up", "-d")
+	cmd := exec.Command("docker-compose", "-f", filepath.Join(dappSrcFolder, o.ComposeFileName), "up", "-d")
 	log.Printf("Running: %v", cmd)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
@@ -37,7 +39,7 @@ func (o *DockerComposeOrchestrator) Run(ctx context.Context) error {
 	return nil
 }
 
-func (o DockerComposeOrchestrator) Pull(ctx context.Context) error {
+func (o *DockerComposeOrchestrator) Pull(ctx context.Context) error {
 	dappSrcFolder := getDAppSrcFolder(o.ID)
 	check := osutils.PathExists(dappSrcFolder)
 	if check {
@@ -46,16 +48,20 @@ func (o DockerComposeOrchestrator) Pull(ctx context.Context) error {
 			return err
 		}
 	}
-	err := git.CloneRepo(o.URL, dappSrcFolder)
+	err := os.MkdirAll(dappSrcFolder, 0o777)
 	if err != nil {
-		return fmt.Errorf("error while cloning <%v> repo: %w", o.URL, err)
+		return err
+	}
+	err = o.GetDockerComposeFile(o.URL, getDAppSrcFolder(o.ID), o.ComposeFileName)
+	if err != nil {
+		return err
 	}
 	return nil
 }
 
 func (o *DockerComposeOrchestrator) Build(ctx context.Context) error {
 	dappSrcFolder := getDAppSrcFolder(o.ID)
-	cmd := exec.Command("docker-compose", "-f", filepath.Join(dappSrcFolder, o.ComposeFilePath), "build")
+	cmd := exec.Command("docker-compose", "-f", filepath.Join(dappSrcFolder, o.ComposeFileName), "build")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("error executing <%v>: %w", cmd, err)
@@ -66,7 +72,7 @@ func (o *DockerComposeOrchestrator) Build(ctx context.Context) error {
 
 func (o *DockerComposeOrchestrator) Down(ctx context.Context) error {
 	dappSrcFolder := getDAppSrcFolder(o.ID)
-	cmd := exec.Command("docker-compose", "-f", filepath.Join(dappSrcFolder, o.ComposeFilePath), "down")
+	cmd := exec.Command("docker-compose", "-f", filepath.Join(dappSrcFolder, o.ComposeFileName), "down")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("error executing <%v>: %w", cmd, err)

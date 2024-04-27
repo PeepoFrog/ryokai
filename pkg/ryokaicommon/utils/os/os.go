@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"net/http"
 	"os"
 	"os/exec"
 	"os/user"
+	"path/filepath"
 	"strconv"
 
 	"github.com/google/shlex"
@@ -183,5 +185,37 @@ func CreateFileWithData(filePath string, data []byte) error {
 		return fmt.Errorf("failed to write data to file: %w", err)
 	}
 
+	return nil
+}
+
+func DownloadFile(url, folder, filName string) error {
+	check := PathExists(filepath.Dir(folder))
+	if !check {
+		return fmt.Errorf("<%v> path is not exist", folder)
+	}
+	saveFilePath := filepath.Join(folder, filName)
+
+	check = IsDir(saveFilePath)
+	if check {
+		return fmt.Errorf("<%v> path already exist as folder", saveFilePath)
+	}
+
+	resp, err := http.Get(url)
+	if err != nil {
+		return err
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("failed to fetch file: %s", resp.Status)
+	}
+	defer resp.Body.Close()
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+	err = CreateFileWithData(saveFilePath, data)
+	if err != nil {
+		return err
+	}
 	return nil
 }
