@@ -24,8 +24,9 @@ type DockerComposeOrchestrator struct {
 
 func NewDockerComposeOrchestrator(dapp *types.DApp) *DockerComposeOrchestrator {
 	defaultComposeFilePath := "compose.yml"
-	dcm := NewDockerComposeManager()
-	return &DockerComposeOrchestrator{ComposeFileName: defaultComposeFilePath, DockerComposeProjectManager: dcm}
+	// dcm := NewDockerComposeManager()
+	// return &DockerComposeOrchestrator{ComposeFileName: defaultComposeFilePath, DockerComposeProjectManager: dcm}
+	return &DockerComposeOrchestrator{ComposeFileName: defaultComposeFilePath}
 	// return &DockerComposeOrchestrator{DApp: dapp, ComposeFileName: defaultComposeFilePath, DockerComposeProjectManager: dcm}
 }
 
@@ -54,7 +55,7 @@ func (o *DockerComposeOrchestrator) Pull(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	err = o.GetDockerComposeFile(ctx, o.Dapp.URL, getDAppSrcFolder(o.Dapp.ID), o.ComposeFileName)
+	err = GetDockerComposeFile(ctx, o.Dapp.URL, getDAppSrcFolder(o.Dapp.ID), o.ComposeFileName)
 	if err != nil {
 		return err
 	}
